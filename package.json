@@ -1,6 +1,6 @@
 {
   "name": "mistral-tokenizer-ts",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "TS tokenizer for Mistral-based LLMs",
   "keywords": [
     "mistral",
@@ -28,6 +28,9 @@
   "module": "dist/tokenizer.module.js",
   "source": "src/tokenizer.ts",
   "types": "dist/tokenizer.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "rimraf dist && microbundle",
     "dev": "microbundle watch",
