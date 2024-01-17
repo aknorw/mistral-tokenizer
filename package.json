@@ -28,6 +28,9 @@
   "module": "dist/tokenizer.module.js",
   "source": "src/tokenizer.ts",
   "types": "dist/tokenizer.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "rimraf dist && microbundle",
     "dev": "microbundle watch",
