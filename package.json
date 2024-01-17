@@ -1,25 +1,60 @@
 {
-  "name": "mistral-tokenizer-js",
+  "name": "mistral-tokenizer-ts",
   "version": "1.0.0",
-  "description": "JS tokenizer for Mistral-based LLMs",
-  "main": "mistral-tokenizer.js",
-  "scripts": {
-    "test": "node test-mistral-tokenizer.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/imoneoi/mistral-tokenizer.git"
-  },
+  "description": "TS tokenizer for Mistral-based LLMs",
   "keywords": [
     "mistral",
     "llm",
     "tokenizer"
   ],
-  "type": "module",
-  "author": "One <imonenext@gmail.com> (https://github.com/imoneoi)",
-  "license": "MIT",
+  "homepage": "https://github.com/aknorw/mistral-tokenizer",
   "bugs": {
-    "url": "https://github.com/imoneoi/mistral-tokenizer/issues"
+    "url": "https://github.com/aknorw/mistral-tokenizer/issues"
   },
-  "homepage": "https://github.com/imoneoi/mistral-tokenizer#readme"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aknorw/mistral-tokenizer.git"
+  },
+  "license": "MIT",
+  "author": "aknorw (https://github.com/aknorw)",
+  "type": "module",
+  "exports": {
+    "default": "./dist/tokenizer.module.js",
+    "import": "./dist/tokenizer.module.js",
+    "require": "./dist/tokenizer.cjs.js"
+  },
+  "main": "dist/tokenizer.cjs",
+  "unpkg": "dist/tokenizer.umd.js",
+  "module": "dist/tokenizer.module.js",
+  "source": "src/tokenizer.ts",
+  "types": "dist/tokenizer.d.ts",
+  "scripts": {
+    "build": "rimraf dist && microbundle",
+    "dev": "microbundle watch",
+    "lint": "eslint --ext .js,.ts .",
+    "prepare": "husky install",
+    "pretty": "prettier --config .prettierrc.json --check '**/*.{js,ts,json}'",
+    "test": "jest"
+  },
+  "lint-staged": {
+    "*.{js,ts,json}": [
+      "prettier --config .prettierrc.json --write",
+      "eslint"
+    ]
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.11",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "husky": "^8.0.0",
+    "jest": "^29.7.0",
+    "lint-staged": "^15.2.0",
+    "microbundle": "^0.15.1",
+    "prettier": "^3.2.4",
+    "rimraf": "^5.0.5",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.3.3"
+  }
 }
