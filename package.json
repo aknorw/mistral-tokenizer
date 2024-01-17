@@ -33,6 +33,7 @@
     "dev": "microbundle watch",
     "lint": "eslint --ext .js,.ts .",
     "prepare": "husky install",
+    "prepublishOnly": "npm run build",
     "pretty": "prettier --config .prettierrc.json --check '**/*.{js,ts,json}'",
     "test": "jest"
   },
