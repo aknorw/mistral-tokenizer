@@ -1,6 +1,6 @@
 {
   "name": "mistral-tokenizer-ts",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "TS tokenizer for Mistral-based LLMs",
   "keywords": [
     "mistral",
@@ -19,9 +19,8 @@
   "author": "aknorw (https://github.com/aknorw)",
   "type": "module",
   "exports": {
-    "default": "./dist/tokenizer.module.js",
-    "import": "./dist/tokenizer.module.js",
-    "require": "./dist/tokenizer.cjs.js"
+    "require": "./dist/tokenizer.cjs",
+    "default": "./dist/tokenizer.modern.js"
   },
   "main": "dist/tokenizer.cjs",
   "unpkg": "dist/tokenizer.umd.js",
