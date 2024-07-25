@@ -1,90 +1,49 @@
-import { mergesBinary, vocabularyBase64 } from './constants'
-import { PriorityQueue } from './priority_queue'
-import { decodeBase64, hexToUtf8Byte, utf8ByteToHex } from './utils'
+import { readFileSync } from 'fs'
+import path from 'path'
 
-const utf8Decoder = new TextDecoder('utf-8')
-const utf8Encoder = new TextEncoder()
+import { SpecialTokens } from '../commons'
+import { PriorityQueue } from '../priority_queue'
+import { compact, decodeBase64, hexToUtf8Byte, utf8ByteToHex } from '../utils'
+import { TokenId, Tokenizer } from './base'
 
-type TokenId = number
+const textDecoder = new TextDecoder('utf-8')
+const textEncoder = new TextEncoder()
 
-class Data {
-  static #vocabById: ReadonlyArray<string>
-  static #vocabByString: Map<string, TokenId>
-  static #merges: Map<string, TokenId>
+type TokenNode = {
+  origPos: number
+  tokenId: number
+  prev: TokenNode | null
+  next: TokenNode | null
+  mergePrio?: number
+  mergeToString?: string
+  deleted?: boolean
+}
 
-  private constructor() {}
+export class SentencePieceBPETokenizer extends Tokenizer {
+  #vocabById: ReadonlyArray<string>
+  #vocabByString: Map<string, TokenId> = new Map<string, TokenId>()
+  #merges: Map<string, TokenId>
 
-  private static get vocabById() {
-    if (!Data.#vocabById) {
-      Data.#vocabById = Data.#decodeVocabulary(vocabularyBase64)
-    }
+  constructor(tokenizerFilePath: string) {
+    super()
 
-    return Data.#vocabById
+    const vocabularyData = readFileSync(path.resolve(tokenizerFilePath, 'vocab.bin'), 'utf-8')
+    this.#vocabById = this.#decodeVocabulary(vocabularyData)
+
+    this.#vocabById.forEach((tokenString, tokenId) => {
+      this.#vocabByString.set(tokenString, tokenId)
+    })
+
+    const mergesData = readFileSync(path.resolve(tokenizerFilePath, 'merges.bin'), 'utf-8')
+    this.#merges = this.#decompressMerges(mergesData)
   }
 
-  static getVocabById(id: TokenId) {
-    return this.vocabById[id]
+  #decodeVocabulary(binary: string) {
+    const byteArray = Uint8Array.from(decodeBase64(binary), (c) => c.charCodeAt(0))
+    return textDecoder.decode(byteArray).split('\n')
   }
 
-  private static get vocabByString() {
-    if (!Data.#vocabByString) {
-      Data.#vocabByString = new Map<string, TokenId>()
-      Data.vocabById.forEach((tokenString, tokenId) => {
-        Data.#vocabByString.set(tokenString, tokenId)
-      })
-    }
-
-    return Data.#vocabByString
-  }
-
-  static getVocabByString(tokenString: string) {
-    return this.vocabByString.get(tokenString)
-  }
-
-  private static get merges() {
-    if (!Data.#merges) {
-      Data.#merges = Data.#decompressMerges(mergesBinary)
-    }
-
-    return Data.#merges
-  }
-
-  static getMergeByIdentifierString(mergeIdentifierString: string) {
-    return Data.merges.get(mergeIdentifierString)
-  }
-
-  /**
-   * Helper function to decode the vocabulary.
-   *
-   * vocab_base64 is base64-encoded string of tokens delimited by '\n' (line break) in utf-8.
-   * The row number of the token (indexing from 0) represents the id of the token in mistral tokenizer.
-   *
-   * Most tokens look like this: "ic" (without the quotes) (representing the "i" character followed by the "c" character)
-   * Some tokens are special. In particular, spaces are replaced with the "▁" character and line-break is represented as "<0x0A>".
-   *
-   * This helper function returns the vocabulary as an array that contains Strings representing tokens:
-   *
-   *  "<unk>"   // Special token: unknown token
-   *  "<s>"     // Special token: beginning of string
-   *  "</s>"    // Special token: end of string
-   *  "<0x00>"  // Byte-level token representing the 0-byte
-   *  "<0x01>"  // Byte-level token ...
-   *  "<0x02>"  // Byte-level token ...
-   *  ...       // More byte-level tokens
-   *  "<0x0A>"  // Byte-level token representing '\n' (line break). This is one of the few byte-level tokens that appear to be actually needed in practice.
-   *  ...       // More byte-level tokens
-   *  "<0xFF>"  // Byte-level token ...
-   *  "▁▁"     // Token representing 2 consecutive spaces.
-   *  "▁t"     // Token representing the space character followed by the "t" character.
-   *  "er"      // Token representing the "e" character followed by the "r" character. Most tokens look like this.
-   *  ...       // 32000 tokens
-   */
-  static #decodeVocabulary(vocabulary: string) {
-    const byteArray = Uint8Array.from(decodeBase64(vocabulary), (c) => c.charCodeAt(0))
-    return utf8Decoder.decode(byteArray).split('\n')
-  }
-
-  static #decompressMerges(binary: string) {
+  #decompressMerges(binary: string) {
     // Base64 decode binary.
     const byteArrayString = decodeBase64(binary)
 
@@ -111,7 +70,7 @@ class Data {
     for (let i = 0; i < tokenIds.length; i += 2) {
       const id1 = tokenIds[i]
       const id2 = tokenIds[i + 1]
-      const mergeIdentifierString = this.getMergeIdentifierString(id1, id2)
+      const mergeIdentifierString = this.#getMergeIdentifierString(id1, id2)
       // Key identifies token pair, value represents merge priority.
       merges.set(mergeIdentifierString, i + 1)
     }
@@ -119,41 +78,33 @@ class Data {
     return merges
   }
 
-  static getMergeIdentifierString(firstTokenId: TokenId, secondTokenId: TokenId) {
-    return `${this.getVocabById(firstTokenId)} ${this.getVocabById(secondTokenId)}`
+  #getMergeByIdentifierString(mergeIdentifierString: string) {
+    return this.#merges.get(mergeIdentifierString)
   }
 
-  static mapCharactersToTokenIds(prompt: string, addBosToken: boolean, addPrecedingSpace: boolean) {
+  #mapCharactersToTokenIds(text: string) {
     const tokenIds: Array<TokenId> = []
 
-    // Special "beginning of string" token.
-    if (addBosToken) {
-      tokenIds.push(1)
-    }
-
-    // Special: spaces are represented as thick underscore ▁ (id 28705).
-    const promptAltered = (
-      addPrecedingSpace
-        ? ` ${prompt}` // Special "preceding space" added to beginning of prompt.
-        : prompt
-    ).replaceAll(' ', this.getVocabById(28705))
+    // Special "preceding space" added to beginning of prompt.
+    // spaces are represented as thick underscore ▁ (id 28705).
+    const alteredText = ` ${text}`.replaceAll(' ', '\u2581')
 
     // We need to use Array.from to iterate over characters in order to support UTF-8 multipoint characters.
-    const charArray = Array.from(promptAltered)
+    const charArray = Array.from(alteredText)
 
     // Transform each character to its corresponding token.
     for (const c of charArray) {
-      const id = this.getVocabByString(c)
+      const id = this.#vocabByString.get(c)
 
       if (id) {
         // Typical case
         tokenIds.push(id)
       } else {
         // Special case where token not found and we have to fallback to byte-level tokens.
-        const bytes = utf8Encoder.encode(c)
+        const bytes = textEncoder.encode(c)
 
         for (const byte of bytes) {
-          const hex = this.getVocabByString(utf8ByteToHex(byte))
+          const hex = this.#vocabByString.get(utf8ByteToHex(byte))
 
           if (hex) {
             tokenIds.push(hex)
@@ -164,7 +115,7 @@ class Data {
               `Encountered unknown character ${c} (partial UTF-8 byte ${byte} + hex + ${utf8ByteToHex(byte)})`,
             )
 
-            tokenIds[tokenIds.length - 1] = 0
+            tokenIds[tokenIds.length - 1] = this.#vocabByString.get('<unk>')!
           }
         }
       }
@@ -172,30 +123,38 @@ class Data {
 
     return tokenIds
   }
-}
 
-type TokenNode = {
-  origPos: number
-  tokenId: number
-  prev: TokenNode | null
-  next: TokenNode | null
-  mergePrio?: number
-  mergeToString?: string
-  deleted?: boolean
-}
+  #getMergeIdentifierString(firstTokenId: TokenId, secondTokenId: TokenId) {
+    return `${this.vocab[firstTokenId]} ${this.vocab[secondTokenId]}`
+  }
 
-export class MistralTokenizer {
-  constructor(readonly shouldTrackPerformance: boolean = false) {}
+  get vocab() {
+    return this.#vocabById
+  }
 
-  encode(prompt: string, addBosToken: boolean = true, addPrecedingSpace: boolean = true): ReadonlyArray<TokenId> {
-    const startTime = this.shouldTrackPerformance ? performance.now() : 0
+  get vocabSize() {
+    return this.vocab.length
+  }
 
-    if (prompt.length === 0) {
+  get bosId() {
+    return this.#vocabByString.get(SpecialTokens.BOS)!
+  }
+
+  get eosId() {
+    return this.#vocabByString.get(SpecialTokens.EOS)!
+  }
+
+  encode(text: string, shouldAddBosToken: boolean = true, shouldAddEosToken: boolean = false) {
+    if (text.length === 0) {
       return []
     }
 
     // Initially each character is transformed to a tokenId, later there will be merges of these.
-    const tokenIds = Data.mapCharactersToTokenIds(prompt, addBosToken, addPrecedingSpace)
+    const tokenIds = compact([
+      shouldAddBosToken && this.bosId,
+      ...this.#mapCharactersToTokenIds(text),
+      shouldAddEosToken && this.eosId,
+    ])
 
     // Set up priority queue to efficiently iterate merge possibilities in priority order.
     const mergeQueue = new PriorityQueue<TokenNode>((a, b) => {
@@ -207,16 +166,16 @@ export class MistralTokenizer {
 
     const addToMergeQueue = (leftNode: TokenNode) => {
       if (leftNode.next) {
-        const mergeIdentifierString = Data.getMergeIdentifierString(leftNode.tokenId, leftNode.next.tokenId)
+        const mergeIdentifierString = this.#getMergeIdentifierString(leftNode.tokenId, leftNode.next.tokenId)
 
         // Merge priority is primarily determined by the location of the merge in the "merges" data,
         // secondarily determined by the relative position of the node in the linked list
         // (We want to perform equal merges from left to right).
-        const mergeLocation = Data.getMergeByIdentifierString(mergeIdentifierString)
+        const mergeLocation = this.#getMergeByIdentifierString(mergeIdentifierString)
 
         // If mergeLocation not found in merges, that means this merge is not possible according to vocabulary.
         if (mergeLocation) {
-          const mergePrio = mergeLocation + leftNode.origPos / prompt.length
+          const mergePrio = mergeLocation + leftNode.origPos / text.length
           leftNode.mergePrio = mergePrio
           leftNode.mergeToString = mergeIdentifierString.replace(' ', '')
           mergeQueue.push(leftNode)
@@ -283,7 +242,7 @@ export class MistralTokenizer {
       }
 
       if (leftOfMerge.mergeToString) {
-        const tokenId = Data.getVocabByString(leftOfMerge.mergeToString)
+        const tokenId = this.#vocabByString.get(leftOfMerge.mergeToString)
 
         if (tokenId) {
           // Create node representing merge result.
@@ -297,7 +256,6 @@ export class MistralTokenizer {
           // Consider adding to merge queue: prev--resultOfMerge.
           if (resultOfMerge.prev) {
             resultOfMerge.prev.next = resultOfMerge
-            resultOfMerge.prev
             addToMergeQueue(resultOfMerge.prev)
           } else {
             // If prev does not exist then this is the new firstNode.
@@ -325,21 +283,17 @@ export class MistralTokenizer {
       mergedTokenIds.push(currTokenNode.tokenId)
     }
 
-    if (this.shouldTrackPerformance) {
-      const endTime = performance.now()
-      console.log(`encode() took ${endTime - startTime} milliseconds.`)
-    }
-
     return mergedTokenIds
   }
 
-  decode(tokenIds: ReadonlyArray<TokenId>, addBosToken: boolean = true, addPrecedingSpace: boolean = true): string {
+  decode(tokenIds: ReadonlyArray<TokenId>): string {
     const utf8byteVals: Array<number> = []
-    const startIndex = addBosToken ? 1 : 0
+    const hasBosToken = tokenIds[0] === this.bosId
+    const startIndex = hasBosToken ? 1 : 0
 
     for (let i = startIndex; i < tokenIds.length; i++) {
       const tokenId = tokenIds[i]
-      const tokenString = Data.getVocabById(tokenId)
+      const tokenString = this.vocab[tokenId]
 
       if (tokenString.startsWith('<0x') && tokenString.endsWith('>')) {
         // Special case.
@@ -347,16 +301,16 @@ export class MistralTokenizer {
         utf8byteVals.push(utf8byte)
       } else {
         // Typical case.
-        const utf8bytes = utf8Encoder.encode(tokenString)
+        const utf8bytes = textEncoder.encode(tokenString)
         utf8bytes.forEach((utf8Byte) => utf8byteVals.push(utf8Byte))
       }
     }
 
     const uint8Array = new Uint8Array(utf8byteVals)
-    const decodedString = utf8Decoder.decode(uint8Array)
-    const spacesFixed = decodedString.replaceAll(Data.getVocabById(28705), ' ')
+    const decodedString = textDecoder.decode(uint8Array)
+    const spacesFixed = decodedString.replaceAll('\u2581', ' ')
 
     // Note that preceding space must be removed here at string level, not earlier at token level, because multiple consecutive spaces are represented as single token.
-    return addPrecedingSpace ? spacesFixed.slice(1) : spacesFixed
+    return spacesFixed.slice(1)
   }
 }

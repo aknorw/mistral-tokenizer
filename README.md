@@ -1,10 +1,16 @@
 # 🌬️ mistral-tokenizer-ts 🌬️
 
-This repository is a TypeScript fork of [`mistral-tokenizer-js`](https://github.com/imoneoi/mistral-tokenizer), initially developed by [imoneoi]().
+Typescript tokenizer for Mistral models.
 
-It is designed to maintain the core functionality of the tokenizer while leveraging the advantages of TypeScript for better type safety and developer experience. 
-
-Please refer to the original repository for more context and the foundational work behind the tokenizer.
+**Supported models:**
+* `open-mistral-7b`
+* `open-mixtral-8x7b`
+* `mistral-embed`
+* `mistral-small`
+* `mistral-large`
+* `open-mixtral-8x22b`
+* `codestral-22b`
+* `mistral-nemo`
 
 ## Install
 
@@ -15,15 +21,15 @@ npm install mistral-tokenizer-ts
 ## Usage
 
 ```ts
-import { MistralTokenizer } from 'mistral-tokenizer-ts'
+import { getTokenizerForModel } from 'mistral-tokenizer-ts'
 
-const tokenizer = new MistralTokenizer()
+const tokenizer = getTokenizerForModel('open-mistral-7b')
 
 // Encode.
-const tokens = tokenizer.encode('Hello world!')
+const encoded = tokenizer.encode('Hello world!')
 
 // Decode.
-const decoded = tokenizer.decode([1, 22557, 1526, 28808])
+const decoded = tokenizer.decode([1, 22557, 1526])
 ```
 
 ## Tests
@@ -34,4 +40,7 @@ npm run test
 
 ## Credit
 
-* [`@imoneoi`](https://github.com/imoneoi)
+* [`@imoneoi`](https://github.com/imoneoi) for the [initial implementation](https://github.com/imoneoi/mistral-tokenizer)
+* [`@dqbd`](https://github.com/dqbd) for the [tiktoken JS port](https://github.com/dqbd/tiktoken/tree/main/js)
+* [`@mistralai`](https://github.com/mistralai) for the [Python tokenizers](https://github.com/mistralai/mistral-common)
+
