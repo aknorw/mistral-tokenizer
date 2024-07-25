@@ -19,15 +19,16 @@
   "author": "aknorw (https://github.com/aknorw)",
   "type": "module",
   "exports": {
-    "require": "./dist/tokenizer.cjs",
-    "default": "./dist/tokenizer.modern.js"
+    "require": "./dist/index.cjs",
+    "default": "./dist/index.modern.js"
   },
-  "main": "dist/tokenizer.cjs",
-  "unpkg": "dist/tokenizer.umd.js",
-  "module": "dist/tokenizer.module.js",
-  "source": "src/tokenizer.ts",
-  "types": "dist/tokenizer.d.ts",
+  "main": "dist/index.cjs",
+  "unpkg": "dist/index.umd.js",
+  "module": "dist/index.module.js",
+  "source": "src/index.ts",
+  "types": "dist/index.d.ts",
   "files": [
+    "data",
     "dist"
   ],
   "scripts": {
@@ -45,6 +46,9 @@
       "eslint"
     ]
   },
+  "dependencies": {
+    "js-tiktoken": "^1.0.12"
+  },
   "devDependencies": {
     "@types/jest": "^29.5.11",
     "@typescript-eslint/eslint-plugin": "^6.19.0",
@@ -59,5 +63,9 @@
     "rimraf": "^5.0.5",
     "ts-jest": "^29.1.1",
     "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": "20",
+    "yarn": "please-use-npm-instead"
   }
 }
