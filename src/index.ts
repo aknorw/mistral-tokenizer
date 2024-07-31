@@ -1,6 +1,12 @@
 import path from 'path'
 
-import { getTokenizerVersionForModel, MistralModel, shouldUseTekkenForModel, TokenizerVersion } from './commons'
+import {
+  getTokenizerVersionForModel,
+  MistralModel,
+  MistralModelAlias,
+  shouldUseTekkenForModel,
+  TokenizerVersion,
+} from './commons'
 import { UnreachableError } from './errors'
 import { Tokenizer } from './tokenizers/base'
 import { SentencePieceBPETokenizer } from './tokenizers/sentence_piece'
@@ -53,11 +59,11 @@ export function getTokenizer(version: TokenizerVersion, shouldUseTekken: boolean
   return new MistralTokenizer(version, shouldUseTekken)
 }
 
-export function getTokenizerForModel(model: MistralModel) {
-  const tokenizerVersion = getTokenizerVersionForModel(model)
-  const shouldUseTekken = shouldUseTekkenForModel(model)
+export function getTokenizerForModel(modelOrAlias: MistralModel | MistralModelAlias) {
+  const tokenizerVersion = getTokenizerVersionForModel(modelOrAlias)
+  const shouldUseTekken = shouldUseTekkenForModel(modelOrAlias)
 
   return getTokenizer(tokenizerVersion, shouldUseTekken)
 }
 
-export { MistralModel, TokenizerVersion }
+export { MistralModel, MistralModelAlias, TokenizerVersion }
