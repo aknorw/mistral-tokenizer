@@ -15,31 +15,70 @@ export function isValidTokenizerFunction(version: unknown): version is Tokenizer
 }
 
 export const MistralModel = {
-  CODESTRAL_22B: 'codestral-22b',
-  MISTRAL_EMBED: 'mistral-embed',
-  MISTRAL_LARGE: 'mistral-large',
-  MISTRAL_NEMO: 'mistral-nemo',
-  MISTRAL_SMALL: 'mistral-small',
-  OPEN_MITRAL_7B: 'open-mistral-7b',
-  OPEN_MIXTRAL_8X22B: 'open-mixtral-8x22b',
-  OPEN_MIXTRAL_8X7B: 'open-mixtral-8x7b',
+  CODESTRAL_2405: 'codestral-2405',
+  MISTRAL_EMBED_2312: 'mistral-embed-2312',
+  MISTRAL_LARGE_2402: 'mistral-large-2402',
+  MISTRAL_LARGE_2407: 'mistral-large-2407',
+  MISTRAL_SMALL_2402: 'mistral-small-2402',
+  OPEN_CODESTRAL_MAMBA_V01: 'open-codestral-mamba-v0.1',
+  OPEN_MISTRAL_7B_V01: 'open-mistral-7b-v0.1',
+  OPEN_MISTRAL_7B_V02: 'open-mistral-7b-v0.2',
+  OPEN_MISTRAL_7B_V03: 'open-mistral-7b-v0.3',
+  OPEN_MISTRAL_NEMO_2407: 'open-mistral-nemo-2407',
+  OPEN_MIXTRAL_8X22B_V01: 'open-mixtral-8x22b-v0.1',
+  OPEN_MIXTRAL_8X7B_V01: 'open-mixtral-8x7b-v0.1',
 } as const
 export type MistralModel = (typeof MistralModel)[keyof typeof MistralModel]
 
-export function getTokenizerVersionForModel(model: MistralModel): TokenizerVersion {
+export const MistralModelAlias = {
+  CODESTRAL_LATEST: 'codestral-latest',
+  MISTRAL_EMBED: 'mistral-embed',
+  MISTRAL_LARGE_LATEST: 'mistral-large-latest',
+  MISTRAL_SMALL_LATEST: 'mistral-small-latest',
+  OPEN_CODESTRAL_MAMBA: 'open-codestral-mamba',
+  OPEN_MISTRAL_7B: 'open-mistral-7b',
+  OPEN_MISTRAL_NEMO: 'open-mistral-nemo',
+  OPEN_MIXTRAL_8X22B: 'open-mixtral-8x22b',
+  OPEN_MIXTRAL_8X7B: 'open-mixtral-8x7b',
+} as const
+export type MistralModelAlias = (typeof MistralModelAlias)[keyof typeof MistralModelAlias]
+
+function isModelAlias(model: unknown): model is MistralModelAlias {
+  return Object.values(MistralModelAlias).includes(model as MistralModelAlias)
+}
+
+const aliasToModelMap: Record<MistralModelAlias, MistralModel> = {
+  [MistralModelAlias.CODESTRAL_LATEST]: MistralModel.CODESTRAL_2405,
+  [MistralModelAlias.MISTRAL_EMBED]: MistralModel.MISTRAL_EMBED_2312,
+  [MistralModelAlias.MISTRAL_LARGE_LATEST]: MistralModel.MISTRAL_LARGE_2407,
+  [MistralModelAlias.MISTRAL_SMALL_LATEST]: MistralModel.MISTRAL_SMALL_2402,
+  [MistralModelAlias.OPEN_CODESTRAL_MAMBA]: MistralModel.OPEN_CODESTRAL_MAMBA_V01,
+  [MistralModelAlias.OPEN_MISTRAL_7B]: MistralModel.OPEN_MISTRAL_7B_V03,
+  [MistralModelAlias.OPEN_MISTRAL_NEMO]: MistralModel.OPEN_MISTRAL_NEMO_2407,
+  [MistralModelAlias.OPEN_MIXTRAL_8X22B]: MistralModel.OPEN_MIXTRAL_8X22B_V01,
+  [MistralModelAlias.OPEN_MIXTRAL_8X7B]: MistralModel.OPEN_MIXTRAL_8X7B_V01,
+}
+
+export function getTokenizerVersionForModel(modelOrAlias: MistralModel | MistralModelAlias): TokenizerVersion {
+  const model = isModelAlias(modelOrAlias) ? aliasToModelMap[modelOrAlias] : modelOrAlias
+
   switch (model) {
-    case MistralModel.MISTRAL_EMBED:
-    case MistralModel.OPEN_MITRAL_7B:
-    case MistralModel.OPEN_MIXTRAL_8X7B:
+    case MistralModel.MISTRAL_EMBED_2312:
+    case MistralModel.OPEN_MISTRAL_7B_V01:
+    case MistralModel.OPEN_MISTRAL_7B_V02:
+    case MistralModel.OPEN_MIXTRAL_8X7B_V01:
       return TokenizerVersion.V1
 
-    case MistralModel.MISTRAL_LARGE:
-    case MistralModel.MISTRAL_SMALL:
+    case MistralModel.MISTRAL_LARGE_2402:
+    case MistralModel.MISTRAL_SMALL_2402:
       return TokenizerVersion.V2
 
-    case MistralModel.CODESTRAL_22B:
-    case MistralModel.MISTRAL_NEMO:
-    case MistralModel.OPEN_MIXTRAL_8X22B:
+    case MistralModel.CODESTRAL_2405:
+    case MistralModel.MISTRAL_LARGE_2407:
+    case MistralModel.OPEN_CODESTRAL_MAMBA_V01:
+    case MistralModel.OPEN_MISTRAL_7B_V03:
+    case MistralModel.OPEN_MISTRAL_NEMO_2407:
+    case MistralModel.OPEN_MIXTRAL_8X22B_V01:
       return TokenizerVersion.V3
 
     default:
@@ -47,9 +86,11 @@ export function getTokenizerVersionForModel(model: MistralModel): TokenizerVersi
   }
 }
 
-export function shouldUseTekkenForModel(model: MistralModel): boolean {
+export function shouldUseTekkenForModel(modelOrAlias: MistralModel | MistralModelAlias): boolean {
+  const model = isModelAlias(modelOrAlias) ? aliasToModelMap[modelOrAlias] : modelOrAlias
+
   switch (model) {
-    case MistralModel.MISTRAL_NEMO:
+    case MistralModel.OPEN_MISTRAL_NEMO_2407:
       return true
 
     default:
