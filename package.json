@@ -1,6 +1,6 @@
 {
   "name": "mistral-tokenizer-ts",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "TS tokenizer for Mistral-based LLMs",
   "keywords": [
     "mistral",
