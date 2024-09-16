@@ -199,7 +199,7 @@ const bpeTestCases: ReadonlyArray<BpeTestCase> = [
 describe('MistralTokenizer - BPE', () => {
   for (const version of Object.values(TokenizerVersion)) {
     describe(version, () => {
-      const tokenizer = getTokenizer(version, false)
+      const tokenizer = getTokenizer(version, false, false)
 
       describe('encode', () => {
         bpeTestCases.forEach((testCase) => {
@@ -344,26 +344,28 @@ const tekkenTestCases: ReadonlyArray<TekkenTestCase> = [
 
 describe('MistralTokenizer - Tekken', () => {
   for (const version of Object.values(TekkenTokenizerVersion)) {
-    describe(version, () => {
-      const tokenizer = getTokenizer(version, true)
+    for (const isMultimodal of [false, true]) {
+      describe(`${version} - isMultimodal: ${isMultimodal}`, () => {
+        const tokenizer = getTokenizer(version, true, isMultimodal)
 
-      describe('encode', () => {
-        tekkenTestCases.forEach((testCase) => {
-          test(testCase.title, () => {
-            const tokenIds = tokenizer.encode(testCase.decoded)
-            expect(tokenIds).toEqual(testCase.encoded[version])
+        describe('encode', () => {
+          tekkenTestCases.forEach((testCase) => {
+            test(testCase.title, () => {
+              const tokenIds = tokenizer.encode(testCase.decoded)
+              expect(tokenIds).toEqual(testCase.encoded[version])
+            })
+          })
+        })
+
+        describe('decode', () => {
+          tekkenTestCases.forEach((testCase) => {
+            test(testCase.title, () => {
+              const decoded = tokenizer.decode(testCase.encoded[version])
+              expect(decoded).toEqual(testCase.decoded)
+            })
           })
         })
       })
-
-      describe('decode', () => {
-        tekkenTestCases.forEach((testCase) => {
-          test(testCase.title, () => {
-            const decoded = tokenizer.decode(testCase.encoded[version])
-            expect(decoded).toEqual(testCase.decoded)
-          })
-        })
-      })
-    })
+    }
   }
 })

@@ -68,6 +68,10 @@ function compressTiktokenBpe(tiktoken_bpe_file: string) {
 
   await writeFile(
     path.resolve(`./data/tekken/${output}`),
-    JSON.stringify({ config: jsonData.config, bpe_ranks: compressTiktokenBpe(simulatedTiktokenFile) }),
+    JSON.stringify({
+      config: jsonData.config,
+      bpe_ranks: compressTiktokenBpe(simulatedTiktokenFile),
+      multimodal: jsonData.multimodal,
+    }),
   )
 })()
