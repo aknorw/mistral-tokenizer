@@ -13,6 +13,7 @@ Typescript tokenizer for Mistral models.
 * `mistral-small-2402`
 * `open-mistral-nemo` (points to `open-mistral-nemo-2407`)
 * `open-mistral-nemo-2407`
+* `pixtral-12b` (points to `pixtral-12b-2409`)
 
 ### Specialized models
 

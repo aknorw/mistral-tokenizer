@@ -2,6 +2,7 @@ import path from 'path'
 
 import {
   getTokenizerVersionForModel,
+  isMultimodalModel,
   MistralModel,
   MistralModelAlias,
   shouldUseTekkenForModel,
@@ -16,6 +17,7 @@ class MistralTokenizer {
   constructor(
     private readonly version: TokenizerVersion,
     private readonly shouldUseTekken: boolean,
+    private readonly isMultimodal: boolean,
   ) {}
 
   get #tokenizerDataPath() {
@@ -28,7 +30,7 @@ class MistralTokenizer {
 
       case TokenizerVersion.V3:
         if (this.shouldUseTekken) {
-          return path.resolve(baseDataPath, 'tekken/240718.json')
+          return path.resolve(baseDataPath, this.isMultimodal ? 'tekken/240911.json' : 'tekken/240718.json')
         }
 
         return path.join(baseDataPath, 'bpe', this.version)
@@ -40,7 +42,7 @@ class MistralTokenizer {
 
   get #tokenizer() {
     if (this.shouldUseTekken) {
-      return new Tekkenizer(this.#tokenizerDataPath)
+      return new Tekkenizer(this.#tokenizerDataPath, this.isMultimodal)
     }
 
     return new SentencePieceBPETokenizer(this.#tokenizerDataPath)
@@ -55,15 +57,16 @@ class MistralTokenizer {
   }
 }
 
-export function getTokenizer(version: TokenizerVersion, shouldUseTekken: boolean) {
-  return new MistralTokenizer(version, shouldUseTekken)
+export function getTokenizer(version: TokenizerVersion, shouldUseTekken: boolean, isMultimodal: boolean) {
+  return new MistralTokenizer(version, shouldUseTekken, isMultimodal)
 }
 
 export function getTokenizerForModel(modelOrAlias: MistralModel | MistralModelAlias) {
   const tokenizerVersion = getTokenizerVersionForModel(modelOrAlias)
   const shouldUseTekken = shouldUseTekkenForModel(modelOrAlias)
+  const isMultimodal = isMultimodalModel(modelOrAlias)
 
-  return getTokenizer(tokenizerVersion, shouldUseTekken)
+  return getTokenizer(tokenizerVersion, shouldUseTekken, isMultimodal)
 }
 
 export { MistralModel, MistralModelAlias, TokenizerVersion }

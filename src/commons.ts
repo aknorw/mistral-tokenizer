@@ -27,6 +27,7 @@ export const MistralModel = {
   OPEN_MISTRAL_NEMO_2407: 'open-mistral-nemo-2407',
   OPEN_MIXTRAL_8X22B_V01: 'open-mixtral-8x22b-v0.1',
   OPEN_MIXTRAL_8X7B_V01: 'open-mixtral-8x7b-v0.1',
+  PIXTRAL_12B_2409: 'pixtral-12b-2409',
 } as const
 export type MistralModel = (typeof MistralModel)[keyof typeof MistralModel]
 
@@ -40,6 +41,7 @@ export const MistralModelAlias = {
   OPEN_MISTRAL_NEMO: 'open-mistral-nemo',
   OPEN_MIXTRAL_8X22B: 'open-mixtral-8x22b',
   OPEN_MIXTRAL_8X7B: 'open-mixtral-8x7b',
+  PIXTRAL_12B: 'pixtral-12b',
 } as const
 export type MistralModelAlias = (typeof MistralModelAlias)[keyof typeof MistralModelAlias]
 
@@ -57,6 +59,7 @@ const aliasToModelMap: Record<MistralModelAlias, MistralModel> = {
   [MistralModelAlias.OPEN_MISTRAL_NEMO]: MistralModel.OPEN_MISTRAL_NEMO_2407,
   [MistralModelAlias.OPEN_MIXTRAL_8X22B]: MistralModel.OPEN_MIXTRAL_8X22B_V01,
   [MistralModelAlias.OPEN_MIXTRAL_8X7B]: MistralModel.OPEN_MIXTRAL_8X7B_V01,
+  [MistralModelAlias.PIXTRAL_12B]: MistralModel.PIXTRAL_12B_2409,
 }
 
 export function getTokenizerVersionForModel(modelOrAlias: MistralModel | MistralModelAlias): TokenizerVersion {
@@ -79,6 +82,7 @@ export function getTokenizerVersionForModel(modelOrAlias: MistralModel | Mistral
     case MistralModel.OPEN_MISTRAL_7B_V03:
     case MistralModel.OPEN_MISTRAL_NEMO_2407:
     case MistralModel.OPEN_MIXTRAL_8X22B_V01:
+    case MistralModel.PIXTRAL_12B_2409:
       return TokenizerVersion.V3
 
     default:
@@ -91,6 +95,19 @@ export function shouldUseTekkenForModel(modelOrAlias: MistralModel | MistralMode
 
   switch (model) {
     case MistralModel.OPEN_MISTRAL_NEMO_2407:
+    case MistralModel.PIXTRAL_12B_2409:
+      return true
+
+    default:
+      return false
+  }
+}
+
+export function isMultimodalModel(modelOrAlias: MistralModel | MistralModelAlias): boolean {
+  const model = isModelAlias(modelOrAlias) ? aliasToModelMap[modelOrAlias] : modelOrAlias
+
+  switch (model) {
+    case MistralModel.PIXTRAL_12B_2409:
       return true
 
     default:
@@ -108,6 +125,9 @@ export const SpecialTokens = {
   BEGIN_TOOL_RESULTS: '[TOOL_RESULTS]',
   END_TOOL_RESULTS: '[/TOOL_RESULTS]',
   TOOL_CALLS: '[TOOL_CALLS]',
+  IMG: '[IMG]',
+  IMG_BREAK: '[IMG_BREAK]',
+  IMG_END: '[IMG_END]',
   PREFIX: '[PREFIX]',
   MIDDLE: '[MIDDLE]',
   SUFFIX: '[SUFFIX]',

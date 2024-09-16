@@ -13,9 +13,15 @@ type TekkenConfig = {
   version: TokenizerVersion
 }
 
+type TekkenMultimodalConfig = {
+  image_patch_size: number
+  max_image_size: number
+}
+
 type TekkenData = {
   config: TekkenConfig
   bpe_ranks: string
+  multimodal?: TekkenMultimodalConfig
 }
 
 // What to do with special tokens when encoding/decoding.
@@ -37,7 +43,10 @@ export class Tekkenizer extends Tokenizer {
     SpecialTokens.BEGIN_TOOL_RESULTS,
     SpecialTokens.END_TOOL_RESULTS,
     SpecialTokens.TOOL_CALLS,
+    SpecialTokens.IMG,
     '<pad>',
+    SpecialTokens.IMG_BREAK,
+    SpecialTokens.IMG_END,
     SpecialTokens.PREFIX,
     SpecialTokens.MIDDLE,
     SpecialTokens.SUFFIX,
@@ -49,7 +58,7 @@ export class Tekkenizer extends Tokenizer {
   #specialTokens: ReadonlyArray<string>
   #model: Tiktoken
 
-  constructor(tokenizerFilePath: string) {
+  constructor(tokenizerFilePath: string, isMultimodal: boolean) {
     super()
 
     const tokenizerData = <TekkenData>JSON.parse(readFileSync(tokenizerFilePath, 'utf-8'))
@@ -57,10 +66,15 @@ export class Tekkenizer extends Tokenizer {
     const {
       config: { pattern, default_vocab_size, default_num_special_tokens, version },
       bpe_ranks,
+      multimodal,
     } = tokenizerData
 
     if (!isValidTokenizerFunction(version)) {
       throw new Error(`Invalid tokenizer version: ${version}`)
+    }
+
+    if (isMultimodal && !multimodal) {
+      throw new Error('Multimodal configuration is required for multimodal tokenizers')
     }
 
     this.vocabSize = default_vocab_size
