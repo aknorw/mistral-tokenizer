@@ -13,37 +13,37 @@ import { SentencePieceBPETokenizer } from './tokenizers/sentence_piece'
 import { Tekkenizer } from './tokenizers/tekken'
 
 class MistralTokenizer {
-  constructor(
-    private readonly version: TokenizerVersion,
-    private readonly shouldUseTekken: boolean,
-  ) {}
+  #tokenizer: Tokenizer;
 
-  get #tokenizerDataPath() {
+  constructor(
+    version: TokenizerVersion,
+    shouldUseTekken: boolean,
+  ) {
+    const tokenizerDataPath = MistralTokenizer.#tokenizerDataPath(version, shouldUseTekken);
+    this.#tokenizer = shouldUseTekken ? new Tekkenizer(tokenizerDataPath) : new SentencePieceBPETokenizer(tokenizerDataPath);
+  }
+
+  static #tokenizerDataPath(
+    version: TokenizerVersion,
+    shouldUseTekken: boolean,
+  ) {
     const baseDataPath = path.join(__dirname, '../data')
 
-    switch (this.version) {
+    switch (version) {
       case TokenizerVersion.V1:
       case TokenizerVersion.V2:
-        return path.join(baseDataPath, 'bpe', this.version)
+        return path.join(baseDataPath, 'bpe', version)
 
       case TokenizerVersion.V3:
-        if (this.shouldUseTekken) {
+        if (shouldUseTekken) {
           return path.resolve(baseDataPath, 'tekken/240718.json')
         }
 
-        return path.join(baseDataPath, 'bpe', this.version)
+        return path.join(baseDataPath, 'bpe', version)
 
       default:
-        throw new UnreachableError(this.version)
+        throw new UnreachableError(version)
     }
-  }
-
-  get #tokenizer() {
-    if (this.shouldUseTekken) {
-      return new Tekkenizer(this.#tokenizerDataPath)
-    }
-
-    return new SentencePieceBPETokenizer(this.#tokenizerDataPath)
   }
 
   encode(...args: Parameters<Tokenizer['encode']>) {
